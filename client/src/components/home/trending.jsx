@@ -43,45 +43,50 @@ const Trending = () => {
     return "https://via.placeholder.com/300";
   };
 
-  // حساب نسبة الخصم في حال توفرت قيمة قديمة للسعر
   const getDiscountPercentage = (oldPrice, price) => {
     return Math.round(((oldPrice - price) / oldPrice) * 100);
   };
 
-  // إضافة منتج إلى السلة مع إشعار
   const handleAddToCart = (e, item) => {
     e.stopPropagation();
     dispatch(addToCart(item));
-    toast.success("تمت الإضافة إلى السلة!");
+       toast.success("Product added to cart", {
+         position: "top-right",
+         duration: 3000,
+         style: {
+           background: "#4CAF50",
+           color: "white",
+         },
+       });
   };
 
-  // إضافة أو إزالة المنتج من المفضلة مع إشعار
   const handleFavoriteToggle = (e, item, isFavorite) => {
     e.stopPropagation();
     if (isFavorite) {
       dispatch(removeFromFavorite(item.id));
-      toast.info("تمت الإزالة من المفضلة.");
+      toast.info("Product delete from favorites");
     } else {
       dispatch(addToFavorite(item));
-      toast.success("تمت الإضافة إلى المفضلة!");
+      toast.success("Product added to favorites", {
+        position: "top-right",
+        duration: 3000,
+        style: {
+          background: "#FF6B6B",
+          color: "white",
+        },
+      });
     }
   };
 
   return (
-    /* قسم رئيسي يحاكي تنسيق CategorySection */
     <section className="py-24 bg-[#fff] relative overflow-hidden">
-      {/* عناصر ديكورية في الخلفية (دوائر ملونة) */}
       <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-[#F0BB78]/5 blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-[#F0BB78]/5 blur-3xl translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
 
-      {/* الحاوية */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative">
-        {/* قسم التوست للتنبيهات */}
         <ToastContainer position="top-right" autoClose={3000} />
 
-        {/* العنوان الرئيسي والتنويه */}
         <div className="text-center mb-16">
-          {/* شارة صغيرة أعلى العنوان */}
           <span className="inline-block px-3 py-1 bg-[#F0BB78] text-black rounded-full text-sm font-semibold tracking-wide uppercase shadow-sm">
             Collections
           </span>
@@ -94,21 +99,18 @@ const Trending = () => {
           </p>
         </div>
 
-        {/* حالة التحميل */}
         {loading && (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F0BB78]"></div>
           </div>
         )}
 
-        {/* حالة الخطأ */}
         {error && (
           <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
             <p className="text-center text-red-500">{error}</p>
           </div>
         )}
 
-        {/* شبكة المنتجات */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
           {displayedItems.map((item) => {
             const isFavorite = favoriteItems.some((fav) => fav.id === item.id);
@@ -123,7 +125,6 @@ const Trending = () => {
                   navigate(`/product/${item.id}`, { state: { item } })
                 }
               >
-                {/* صورة المنتج */}
                 <div className="relative overflow-hidden">
                   <div className="aspect-[3/4] overflow-hidden">
                     <img
@@ -132,13 +133,11 @@ const Trending = () => {
                       className="w-full h-full object-cover object-top group-hover:scale-105 transition duration-700"
                     />
                   </div>
-                  {/* شارة الخصم */}
                   {hasDiscount && (
                     <div className="absolute top-3 left-3 bg-[#F0BB78] text-[#000000] text-xs font-bold px-3 py-1 rounded-full shadow-md">
                       {getDiscountPercentage(item.oldPrice, item.price)}% OFF
                     </div>
                   )}
-                  {/* طبقة شفافة تظهر عند تمرير المؤشر (لأزرار المعاينة السريعة) */}
                   <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                     <button
                       className="bg-[#181818] text-white p-3 rounded-full shadow-lg mx-2 hover:bg-[#F0BB78]/20 transition transform hover:scale-105 duration-300"
@@ -165,7 +164,6 @@ const Trending = () => {
                   </div>
                 </div>
 
-                {/* معلومات المنتج */}
                 <div className="p-5">
                   <h5
                     className="text-sm sm:text-base font-bold truncate hover:text-[#F0BB78] transition cursor-pointer"
@@ -188,7 +186,6 @@ const Trending = () => {
                       </h6>
                     )}
                   </div>
-                  {/* أزرار الإضافة للسلة والمفضلة */}
                   <div className="flex items-center gap-2 mt-4">
                     <button
                       className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors duration-300 shadow-sm ${
@@ -239,7 +236,6 @@ const Trending = () => {
           })}
         </div>
 
-        {/* زر لعرض المزيد أو التقليل */}
         {items.length > 8 && (
           <div className="text-center mt-10">
             <button

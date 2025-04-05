@@ -9,7 +9,7 @@ import {
   FaCcMastercard,
   FaCcPaypal,
 } from "react-icons/fa";
-import Logo from "../assets/Logo.svg";
+import Logo from "../assets/elitefit-logo.svg"; // Updated logo import
 
 const Footer = () => {
   return (

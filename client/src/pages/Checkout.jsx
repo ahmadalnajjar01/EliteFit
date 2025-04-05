@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { clearCart } from "../Slices/cartSlice";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 const Checkout = () => {
   const dispatch = useDispatch();
@@ -15,16 +16,44 @@ const Checkout = () => {
 
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    address: "",
-    city: "",
-    state: "",
-    postalCode: "",
+    shippingName: "",
+    shippingAddress: "",
+    shippingCity: "",
+    shippingState: "",
+    shippingPostalCode: "",
   });
   const [loading, setLoading] = useState(false);
+  const [paypalReady, setPaypalReady] = useState(false);
 
-  // التحقق من أن لكل عنصر في السلة حجمًا ولونًا صالحين
+  // PayPal configuration
+  const paypalOptions = {
+    "client-id":
+      "AQO_lrXGFsV-gcb9dl11jWIu-BW84qeQbOxa31FnSsbeJj_fpHAMK3sb-c2aJjJSnjuaN4CDAxvT3tL1",
+    currency: "USD",
+    intent: "capture",
+  };
+
+  // Toast notification function
+  const showToast = (icon, title, timer = 3000) => {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: timer,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.onmouseenter = Swal.stopTimer;
+        toast.onmouseleave = Swal.resumeTimer;
+      },
+    });
+
+    Toast.fire({
+      icon: icon,
+      title: title,
+    });
+  };
+
+  // Check if all items have valid size and color
   const validCart = cartItems.every(
     (item) =>
       item.selectedSize &&
@@ -46,57 +75,62 @@ const Checkout = () => {
 
   const handlePaymentMethodChange = (method) => {
     setPaymentMethod(method);
+    showToast(
+      "info",
+      `Payment method changed to ${
+        method === "card" ? "Credit/Debit Card" : "PayPal"
+      }`
+    );
   };
 
-  const handlePayment = async () => {
-    // 1) تحقق من خيارات الحجم واللون
+  const validateForm = () => {
+    // 1) Check size and color options
     if (!validCart) {
-      Swal.fire({
-        icon: "warning",
-        title: "Missing Options",
-        text: "Please select size and color for each item before proceeding.",
-      });
-      return;
+      showToast("warning", "Please select size and color for each item");
+      return false;
     }
 
-    // 2) تحقق من ملء كل الحقول المطلوبة
+    // 2) Check all required fields are filled
     const requiredFields = [
-      "name",
-      "email",
-      "address",
-      "city",
-      "state",
-      "postalCode",
+      "shippingName",
+      "shippingAddress",
+      "shippingCity",
+      "shippingState",
+      "shippingPostalCode",
     ];
     const isFormValid = requiredFields.every(
       (field) => formData[field].trim() !== ""
     );
 
     if (!isFormValid) {
-      Swal.fire({
-        icon: "warning",
-        title: "Incomplete Form",
-        text: "Please fill out all the required fields before proceeding.",
-      });
-      return;
+      showToast("warning", "Please fill out all the required shipping fields");
+      return false;
     }
 
+    return true;
+  };
+
+  const createOrder = async () => {
     setLoading(true);
+    showToast("info", "Processing your order...");
 
     try {
-      // جلب التوكن من localStorage
+      // Get token from localStorage
       const token = localStorage.getItem("token");
 
-      // تحضير الـ payload بما يتوافق مع المطلوب:
-      // productIds -> مصفوفة من معرفات المنتجات
-      // total -> إجمالي السعر
-      // size -> مصفوفة بجميع الـ selectedSize من كل عنصر
-      // color -> مصفوفة بجميع الـ selectedColor من كل عنصر
+      // Check if token exists and is valid
+      if (!token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
+
+      // Prepare payload according to backend requirements
       const payload = {
+        ...formData, // This includes all shipping fields
         productIds: cartItems.map((item) => item.id),
         total: totalAmount,
         size: cartItems.map((item) => item.selectedSize),
         color: cartItems.map((item) => item.selectedColor),
+        paymentMethod: paymentMethod,
       };
 
       const response = await fetch(
@@ -112,8 +146,13 @@ const Checkout = () => {
       );
 
       const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(data.message || "Payment failed");
+        // Handle specific JWT errors
+        if (data.error && data.error.includes("jwt")) {
+          throw new Error("Session expired or invalid. Please log in again.");
+        }
+        throw new Error(data.message || "Order creation failed");
       }
 
       setLoading(false);
@@ -122,42 +161,79 @@ const Checkout = () => {
         text: "Your order has been placed successfully. A confirmation email will be sent soon.",
         icon: "success",
         confirmButtonText: "Continue Shopping",
-        confirmButtonColor: "#4F46E5",
+        confirmButtonColor: "#F0BB78",
       }).then(() => {
         dispatch(clearCart());
         navigate("/");
       });
+
+      return data.orderId; // Return order ID for PayPal to use
     } catch (error) {
       setLoading(false);
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: error.message || "An error occurred while processing your order.",
-      });
+
+      // Handle JWT specific errors
+      if (error.message.includes("jwt") || error.message.includes("token")) {
+        showToast("error", "Authentication Error: " + error.message, 5000);
+        setTimeout(() => {
+          localStorage.removeItem("token");
+          navigate("/login");
+        }, 2000);
+      } else {
+        showToast("error", "Error: " + error.message, 5000);
+      }
+      throw error;
     }
   };
 
+  const handlePayment = async () => {
+    if (!validateForm()) return;
+    await createOrder();
+  };
+
+  // Show toast when form fields are filled correctly
+  useEffect(() => {
+    // Check all fields
+    const allFields = [
+      "shippingName",
+      "shippingAddress",
+      "shippingCity",
+      "shippingState",
+      "shippingPostalCode",
+    ];
+
+    // If all fields have been filled and none were previously filled
+    const allFilled = allFields.every((field) => formData[field].trim() !== "");
+
+    if (allFilled) {
+      const prevFilledCount =
+        Object.values(formData).filter((val) => val.trim() !== "").length - 1;
+      if (prevFilledCount === allFields.length - 1) {
+        showToast("success", "All shipping details completed!");
+      }
+    }
+  }, [formData]);
+
   return (
-    <div className="font-sans bg-gray-50 min-h-screen py-8">
+    <div className="font-sans bg-[#fff] min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+          <h1 className="text-3xl font-extrabold text-black sm:text-4xl">
             Checkout
           </h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-black">
             Complete your purchase securely
           </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Shipping & Payment Form */}
-          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="lg:col-span-2 bg-[#252525] rounded-lg shadow-sm overflow-hidden">
             <div className="p-6 sm:p-8">
               <div className="space-y-8">
                 {/* Shipping Information */}
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3">
+                  <h2 className="text-lg font-semibold text-[#F0BB78] flex items-center">
+                    <span className="bg-[#F0BB78] text-black w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3">
                       1
                     </span>
                     Shipping Information
@@ -165,108 +241,115 @@ const Checkout = () => {
                   <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                     <div>
                       <label
-                        htmlFor="name"
-                        className="block text-sm font-medium text-gray-700"
+                        htmlFor="shippingName"
+                        className="block text-sm font-medium text-white"
                       >
                         Full Name
                       </label>
                       <input
                         type="text"
-                        id="name"
-                        name="name"
-                        value={formData.name}
+                        id="shippingName"
+                        name="shippingName"
+                        value={formData.shippingName}
                         onChange={handleInputChange}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2 border"
+                        onBlur={() => {
+                          if (formData.shippingName.trim() !== "") {
+                            showToast("success", "Name saved!");
+                          }
+                        }}
+                        className="mt-1 block w-full border-[#F0BB78] rounded-md shadow-sm focus:ring-[#F0BB78] focus:border-[#F0BB78] sm:text-sm px-3 py-2 border"
                         placeholder="John Doe"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="email"
-                        className="block text-sm font-medium text-gray-700"
-                      >
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2 border"
-                        placeholder="john@example.com"
                         required
                       />
                     </div>
                     <div className="sm:col-span-2">
                       <label
-                        htmlFor="address"
-                        className="block text-sm font-medium text-gray-700"
+                        htmlFor="shippingAddress"
+                        className="block text-sm font-medium text-white"
                       >
                         Street Address
                       </label>
                       <input
                         type="text"
-                        id="address"
-                        name="address"
-                        value={formData.address}
+                        id="shippingAddress"
+                        name="shippingAddress"
+                        value={formData.shippingAddress}
                         onChange={handleInputChange}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2 border"
+                        onBlur={() => {
+                          if (formData.shippingAddress.trim() !== "") {
+                            showToast("success", "Address saved!");
+                          }
+                        }}
+                        className="mt-1 block w-full border-[#F0BB78] rounded-md shadow-sm focus:ring-[#F0BB78] focus:border-[#F0BB78] sm:text-sm px-3 py-2 border"
                         placeholder="123 Main Street"
                         required
                       />
                     </div>
                     <div>
                       <label
-                        htmlFor="city"
-                        className="block text-sm font-medium text-gray-700"
+                        htmlFor="shippingCity"
+                        className="block text-sm font-medium text-white"
                       >
                         City
                       </label>
                       <input
                         type="text"
-                        id="city"
-                        name="city"
-                        value={formData.city}
+                        id="shippingCity"
+                        name="shippingCity"
+                        value={formData.shippingCity}
                         onChange={handleInputChange}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2 border"
+                        onBlur={() => {
+                          if (formData.shippingCity.trim() !== "") {
+                            showToast("success", "City saved!");
+                          }
+                        }}
+                        className="mt-1 block w-full border-[#F0BB78] rounded-md shadow-sm focus:ring-[#F0BB78] focus:border-[#F0BB78] sm:text-sm px-3 py-2 border"
                         placeholder="New York"
                         required
                       />
                     </div>
                     <div>
                       <label
-                        htmlFor="state"
-                        className="block text-sm font-medium text-gray-700"
+                        htmlFor="shippingState"
+                        className="block text-sm font-medium text-white"
                       >
                         State / Province
                       </label>
                       <input
                         type="text"
-                        id="state"
-                        name="state"
-                        value={formData.state}
+                        id="shippingState"
+                        name="shippingState"
+                        value={formData.shippingState}
                         onChange={handleInputChange}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2 border"
+                        onBlur={() => {
+                          if (formData.shippingState.trim() !== "") {
+                            showToast("success", "State saved!");
+                          }
+                        }}
+                        className="mt-1 block w-full border-[#F0BB78] rounded-md shadow-sm focus:ring-[#F0BB78] focus:border-[#F0BB78] sm:text-sm px-3 py-2 border"
                         placeholder="NY"
                         required
                       />
                     </div>
                     <div>
                       <label
-                        htmlFor="postalCode"
-                        className="block text-sm font-medium text-gray-700"
+                        htmlFor="shippingPostalCode"
+                        className="block text-sm font-medium text-white"
                       >
                         Postal / ZIP Code
                       </label>
                       <input
                         type="text"
-                        id="postalCode"
-                        name="postalCode"
-                        value={formData.postalCode}
+                        id="shippingPostalCode"
+                        name="shippingPostalCode"
+                        value={formData.shippingPostalCode}
                         onChange={handleInputChange}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm px-3 py-2 border"
+                        onBlur={() => {
+                          if (formData.shippingPostalCode.trim() !== "") {
+                            showToast("success", "Postal code saved!");
+                          }
+                        }}
+                        className="mt-1 block w-full border-[#F0BB78] rounded-md shadow-sm focus:ring-[#F0BB78] focus:border-[#F0BB78] sm:text-sm px-3 py-2 border"
                         placeholder="10001"
                         required
                       />
@@ -275,9 +358,9 @@ const Checkout = () => {
                 </div>
 
                 {/* Payment Method */}
-                <div className="pt-6 border-t border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <span className="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3">
+                <div className="pt-6 border-t border-[#F0BB78]">
+                  <h2 className="text-lg font-semibold text-[#F0BB78] flex items-center">
+                    <span className="bg-[#F0BB78] text-black w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3">
                       2
                     </span>
                     Payment Method
@@ -286,8 +369,8 @@ const Checkout = () => {
                     <div
                       className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
                         paymentMethod === "card"
-                          ? "border-indigo-500 bg-indigo-50"
-                          : "border-gray-200 hover:border-indigo-300"
+                          ? "border-[#F0BB78] bg-[#F0BB78]/10"
+                          : "border-[#F0BB78]/30 hover:border-[#F0BB78]"
                       }`}
                       onClick={() => handlePaymentMethodChange("card")}
                     >
@@ -295,7 +378,7 @@ const Checkout = () => {
                         type="radio"
                         id="card-payment"
                         name="payment-method"
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        className="h-4 w-4 text-[#F0BB78] focus:ring-[#F0BB78] border-[#F0BB78]"
                         checked={paymentMethod === "card"}
                         onChange={() => {}}
                       />
@@ -303,28 +386,17 @@ const Checkout = () => {
                         htmlFor="card-payment"
                         className="ml-3 flex items-center cursor-pointer"
                       >
-                        <span className="font-medium text-gray-900">
+                        <span className="font-medium text-white">
                           Credit / Debit Card
                         </span>
-                        <div className="ml-auto flex space-x-2">
-                          <div className="h-8 w-12 bg-gray-200 rounded flex items-center justify-center text-xs font-medium text-gray-600">
-                            VISA
-                          </div>
-                          <div className="h-8 w-12 bg-gray-200 rounded flex items-center justify-center text-xs font-medium text-gray-600">
-                            MC
-                          </div>
-                          <div className="h-8 w-12 bg-gray-200 rounded flex items-center justify-center text-xs font-medium text-gray-600">
-                            AMEX
-                          </div>
-                        </div>
                       </label>
                     </div>
 
                     <div
                       className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
                         paymentMethod === "paypal"
-                          ? "border-indigo-500 bg-indigo-50"
-                          : "border-gray-200 hover:border-indigo-300"
+                          ? "border-[#F0BB78] bg-[#F0BB78]/10"
+                          : "border-[#F0BB78]/30 hover:border-[#F0BB78]"
                       }`}
                       onClick={() => handlePaymentMethodChange("paypal")}
                     >
@@ -332,7 +404,7 @@ const Checkout = () => {
                         type="radio"
                         id="paypal-payment"
                         name="payment-method"
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                        className="h-4 w-4 text-[#F0BB78] focus:ring-[#F0BB78] border-[#F0BB78]"
                         checked={paymentMethod === "paypal"}
                         onChange={() => {}}
                       />
@@ -340,101 +412,169 @@ const Checkout = () => {
                         htmlFor="paypal-payment"
                         className="ml-3 flex items-center cursor-pointer"
                       >
-                        <span className="font-medium text-gray-900">
-                          PayPal
-                        </span>
-                        <div className="ml-auto">
-                          <div className="h-8 w-20 bg-gray-200 rounded flex items-center justify-center text-xs font-medium text-gray-600">
-                            PAYPAL
-                          </div>
-                        </div>
+                        <span className="font-medium text-white">PayPal</span>
                       </label>
                     </div>
                   </div>
                 </div>
 
-                {/* Complete Order Button */}
-                <div className="pt-6">
-                  <button
-                    type="button"
-                    onClick={handlePayment}
-                    disabled={loading}
-                    className={`w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white ${
-                      loading
-                        ? "bg-indigo-400 cursor-wait"
-                        : "bg-indigo-600 hover:bg-indigo-700"
-                    } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-                  >
-                    {loading ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      <>Complete Order - ${totalAmount.toFixed(2)}</>
-                    )}
-                  </button>
-                  <p className="mt-3 text-xs text-center text-gray-500">
-                    By completing your purchase, you agree to our{" "}
-                    <a
-                      href="#"
-                      className="text-indigo-600 hover:text-indigo-500"
+                {/* Payment Section */}
+                {paymentMethod === "card" ? (
+                  // Credit Card Form or Button
+                  <div className="pt-6">
+                    <button
+                      type="button"
+                      onClick={handlePayment}
+                      disabled={loading}
+                      className={`w-full flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white ${
+                        loading
+                          ? "bg-[#F0BB78]/50 cursor-wait"
+                          : "bg-[#F0BB78] hover:bg-[#F0BB78]/80"
+                      } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F0BB78]`}
                     >
-                      Terms of Service
-                    </a>{" "}
-                    and{" "}
-                    <a
-                      href="#"
-                      className="text-indigo-600 hover:text-indigo-500"
-                    >
-                      Privacy Policy
-                    </a>
-                  </p>
-                </div>
+                      {loading ? (
+                        <>
+                          <svg
+                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Processing...
+                        </>
+                      ) : (
+                        <>Pay with Card - ${totalAmount.toFixed(2)}</>
+                      )}
+                    </button>
+                    <p className="mt-3 text-xs text-center text-white">
+                      By completing your purchase, you agree to our{" "}
+                      <a
+                        href="#"
+                        className="text-[#F0BB78] hover:text-[#F0BB78]/80"
+                      >
+                        Terms of Service
+                      </a>{" "}
+                      and{" "}
+                      <a
+                        href="#"
+                        className="text-[#F0BB78] hover:text-[#F0BB78]/80"
+                      >
+                        Privacy Policy
+                      </a>
+                    </p>
+                  </div>
+                ) : (
+                  // PayPal Button
+                  <div className="pt-6">
+                    <PayPalScriptProvider options={paypalOptions}>
+                      <div className="paypal-button-container">
+                        <PayPalButtons
+                          style={{
+                            layout: "vertical",
+                            color: "gold",
+                            shape: "rect",
+                            label: "paypal",
+                          }}
+                          createOrder={(data, actions) => {
+                            if (!validateForm()) {
+                              return Promise.reject(
+                                new Error("Please fill all required fields")
+                              );
+                            }
+                            return actions.order.create({
+                              purchase_units: [
+                                {
+                                  amount: {
+                                    value: totalAmount.toFixed(2),
+                                    currency_code: "USD",
+                                  },
+                                },
+                              ],
+                            });
+                          }}
+                          onApprove={async (data, actions) => {
+                            try {
+                              await actions.order.capture();
+                              await createOrder();
+                            } catch (error) {
+                              showToast(
+                                "error",
+                                "Payment failed: " + error.message,
+                                5000
+                              );
+                            }
+                          }}
+                          onError={(err) => {
+                            showToast(
+                              "error",
+                              "PayPal error: " + err.message,
+                              5000
+                            );
+                          }}
+                        />
+                      </div>
+                    </PayPalScriptProvider>
+                    <p className="mt-3 text-xs text-center text-white">
+                      By completing your purchase, you agree to our{" "}
+                      <a
+                        href="#"
+                        className="text-[#F0BB78] hover:text-[#F0BB78]/80"
+                      >
+                        Terms of Service
+                      </a>{" "}
+                      and{" "}
+                      <a
+                        href="#"
+                        className="text-[#F0BB78] hover:text-[#F0BB78]/80"
+                      >
+                        Privacy Policy
+                      </a>
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Right Column - Order Summary */}
           <div className="lg:sticky lg:top-8 h-fit">
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-[#252525] rounded-lg shadow-sm overflow-hidden">
               <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                <h2 className="text-lg font-semibold text-[#F0BB78] mb-4">
                   Order Summary
                 </h2>
                 {cartItems.length > 0 && (
                   <div className="flow-root">
-                    <ul className="divide-y divide-gray-200">
+                    <ul className="divide-y divide-[#F0BB78]/50">
                       {cartItems.map((item) => (
                         <li key={item.id} className="py-4 flex justify-between">
                           <div>
-                            <p className="text-sm font-medium text-gray-700">
+                            <p className="text-sm font-medium text-white">
                               {item.name}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-[#F0BB78]">
                               Qty: {item.quantity}
+                              {item.selectedSize &&
+                                ` | Size: ${item.selectedSize}`}
+                              {item.selectedColor &&
+                                ` | Color: ${item.selectedColor}`}
                             </p>
                           </div>
-                          <p className="text-sm font-medium text-gray-700">
+                          <p className="text-sm font-medium text-white">
                             ${(item.price * item.quantity).toFixed(2)}
                           </p>
                         </li>
@@ -442,16 +582,16 @@ const Checkout = () => {
                     </ul>
                   </div>
                 )}
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                <div className="mt-4 pt-4 border-t border-[#F0BB78]">
+                  <div className="flex justify-between text-sm font-medium text-white mb-2">
                     <p>Subtotal</p>
                     <p>${totalAmount.toFixed(2)}</p>
                   </div>
-                  <div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                  <div className="flex justify-between text-sm font-medium text-white mb-2">
                     <p>Shipping</p>
                     <p className="text-green-600">Free</p>
                   </div>
-                  <div className="flex justify-between text-base font-bold text-gray-900">
+                  <div className="flex justify-between text-base font-bold text-[#F0BB78]">
                     <p>Total</p>
                     <p>${totalAmount.toFixed(2)}</p>
                   </div>
@@ -459,10 +599,10 @@ const Checkout = () => {
               </div>
             </div>
 
-            <div className="mt-6 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+            <div className="mt-6 bg-[#252525] border border-[#F0BB78]/20 rounded-lg p-4">
               <div className="flex items-start">
                 <svg
-                  className="w-5 h-5 text-indigo-600 mt-0.5 mr-3 flex-shrink-0"
+                  className="w-5 h-5 text-[#F0BB78] mt-0.5 mr-3 flex-shrink-0"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                   xmlns="http://www.w3.org/2000/svg"
@@ -474,15 +614,15 @@ const Checkout = () => {
                   ></path>
                 </svg>
                 <div>
-                  <h4 className="font-medium text-indigo-600">
+                  <h4 className="font-medium text-[#F0BB78]">
                     Need help completing your order?
                   </h4>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-white mt-1">
                     If you have questions about payment or shipping, please
                     contact our support at{" "}
                     <a
                       href="mailto:help@shop.com"
-                      className="text-indigo-500 underline"
+                      className="text-[#F0BB78] underline"
                     >
                       help@shop.com
                     </a>{" "}

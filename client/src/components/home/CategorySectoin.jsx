@@ -1,13 +1,6 @@
-
-
-
-
-
-
-
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Toaster, toast } from "react-hot-toast";
 import C1 from "../../assets/Images/C1.png";
 import C2 from "../../assets/Images/C2.png";
 import C3 from "../../assets/Images/C3.png";
@@ -42,13 +35,14 @@ const CategoryCard = ({
   category,
   image,
   cta,
+  link, // new prop to determine destination
   cardType = "standard",
   isSale = false,
   saleText = "",
   delay = 0,
   isInView = false,
 }) => {
-  // Different card styles based on type
+  // Define different card styles based on type
   const cardStyles = {
     featured: "lg:col-span-2 lg:h-96",
     standard: "h-80",
@@ -78,10 +72,10 @@ const CategoryCard = ({
         }}
       ></div>
 
-      {/* Gradient overlay for better text readability */}
+      {/* Gradient overlay for text readability */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/90 via-[#000000]/60 to-transparent opacity-60 group-hover:opacity-90 transition-opacity duration-700 z-10"></div>
 
-      {/* Sale badge with enhanced animation */}
+      {/* Sale badge */}
       {isSale && (
         <div className="absolute top-4 right-4 z-30 rotate-12 transform transition-all duration-500 group-hover:rotate-0 group-hover:scale-110">
           <div className="bg-[#F0BB78] text-[#000000] font-bold py-1.5 px-4 rounded-full shadow-[0_0_20px_rgba(240,187,120,0.4)] flex items-center">
@@ -107,7 +101,7 @@ const CategoryCard = ({
         </div>
       )}
 
-      {/* Content container with improved animations */}
+      {/* Card content */}
       <div className="absolute inset-0 p-6 flex flex-col justify-between z-20">
         <div>
           <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#F0BB78] text-[#000000] mb-2 shadow-md backdrop-blur-sm transform translate-y-1 opacity-80 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500">
@@ -117,10 +111,9 @@ const CategoryCard = ({
             {title}
           </h3>
         </div>
-
-        {cta && (
+        {cta && link && (
           <Link
-            to="/shop"
+            to={link}
             className="self-start mt-4 transform translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-700"
           >
             <button className="bg-[#F0BB78] text-[#000000] font-semibold py-3 px-6 rounded-lg hover:shadow-[0_5px_15px_rgba(240,187,120,0.4)] transition-all duration-300 transform hover:-translate-y-1 flex items-center">
@@ -144,7 +137,7 @@ const CategoryCard = ({
         )}
       </div>
 
-      {/* Image container with improved animation and effects */}
+      {/* Image container */}
       {cardType === "featured" ? (
         <div className="absolute right-0 top-0 h-full w-1/2 lg:w-3/5 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#000000] z-10 opacity-0 group-hover:opacity-80 transition-opacity duration-700"></div>
@@ -171,7 +164,7 @@ const CategoryCard = ({
 };
 
 const CategorySection = () => {
-  // Define category data
+  // Define category data with appropriate links
   const categories = [
     {
       title: "Women's Collection",
@@ -179,6 +172,7 @@ const CategorySection = () => {
       image: C1,
       cta: "Explore Collection",
       cardType: "featured",
+      link: "/women",
     },
     {
       title: "Kids Essentials",
@@ -186,6 +180,7 @@ const CategorySection = () => {
       image: C2,
       cta: "Shop Now",
       cardType: "standard",
+      link: "/kids",
     },
     {
       title: "Men's Style",
@@ -193,6 +188,7 @@ const CategorySection = () => {
       image: C3,
       cta: "View Collection",
       cardType: "standard",
+      link: "/men",
     },
     {
       title: "Seasonal Sale",
@@ -202,6 +198,7 @@ const CategorySection = () => {
       cardType: "standard",
       isSale: true,
       saleText: "UP TO 40%",
+      link: "/sale",
     },
   ];
 
@@ -236,7 +233,7 @@ const CategorySection = () => {
           </p>
         </div>
 
-        {/* Category grid with different layouts for responsive design */}
+        {/* Category grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {categories.map((category, index) => (
             <div
@@ -252,7 +249,7 @@ const CategorySection = () => {
           ))}
         </div>
 
-        {/* Stats section with styling matching Technology component */}
+        {/* Stats section */}
         <div
           className={`mt-20 bg-[#181818] rounded-2xl p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-sm transform transition-all duration-700 ${
             sectionInView
@@ -353,7 +350,7 @@ const CategorySection = () => {
                     </svg>
                   ),
                 },
-              ].map((stat, index) => (
+              ].map((stat) => (
                 <div
                   key={stat.label}
                   className="bg-[#252525] p-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 hover:bg-[#303030] transform hover:-translate-y-1"
@@ -393,7 +390,12 @@ const CategorySection = () => {
                 Discover premium products that match your unique style.
               </p>
             </div>
-            <button className="bg-[#F0BB78] text-[#000000] font-semibold py-3 px-6 rounded-lg hover:shadow-[0_5px_15px_rgba(240,187,120,0.4)] transition-all duration-300 transform hover:-translate-y-1 flex items-center justify-center">
+
+            {/* Updated Link for "Browse All Categories" */}
+            <Link
+              to="/products"
+              className="bg-[#F0BB78] text-[#000000] font-semibold py-3 px-6 rounded-lg hover:shadow-[0_5px_15px_rgba(240,187,120,0.4)] transition-all duration-300 transform hover:-translate-y-1 inline-flex items-center justify-center"
+            >
               <span>Browse All Categories</span>
               <svg
                 className="w-4 h-4 ml-2"
@@ -408,7 +410,7 @@ const CategorySection = () => {
                   d="M14 5l7 7m0 0l-7 7m7-7H3"
                 />
               </svg>
-            </button>
+            </Link>
           </div>
         </div>
       </div>

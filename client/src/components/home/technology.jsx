@@ -240,60 +240,7 @@ const Technology = () => {
         </div>
 
         {/* Testimonial Section */}
-        <div className="mt-20 bg-[#181818] rounded-2xl p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-sm transform hover:scale-[1.01] transition-all duration-500">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-1/3 mb-8 md:mb-0">
-              <div className="bg-[#252525] p-2 rounded-full inline-block shadow-xl">
-                <div className="bg-[#F0BB78] p-4 rounded-full shadow-inner">
-                  <svg
-                    className="w-12 h-12 text-[#000000]"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                  </svg>
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold mt-6 text-white">
-                Customer Stories
-              </h3>
-              <p className="text-white/70 mt-2">
-                See how our technology is making an impact on real customers.
-              </p>
-            </div>
-            <div className="md:w-2/3 md:pl-12">
-              <blockquote className="relative">
-                <svg
-                  className="absolute top-0 left-0 transform -translate-x-6 -translate-y-8 h-16 w-16 text-[#F0BB78]/30"
-                  fill="currentColor"
-                  viewBox="0 0 32 32"
-                >
-                  <path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z" />
-                </svg>
-                <p className="relative text-lg md:text-xl text-white/90 italic">
-                  The AI body sizing technology is incredible! I was skeptical
-                  at first, but the clothes I ordered fit perfectly. It's like
-                  having a personal tailor in my pocket.
-                </p>
-                <footer className="mt-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 mr-4">
-                      <div className="h-12 w-12 rounded-full bg-[#F0BB78] text-[#000000] flex items-center justify-center text-xl font-semibold shadow-[0_0_15px_rgba(240,187,120,0.3)]">
-                        SR
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold text-white">
-                        Sarah Richards
-                      </p>
-                      <p className="text-sm text-white/70">San Francisco, CA</p>
-                    </div>
-                  </div>
-                </footer>
-              </blockquote>
-            </div>
-          </div>
-        </div>
+       
       </div>
     </section>
   );

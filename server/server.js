@@ -9,8 +9,11 @@ const categoryRoutes = require("./routes/CategoriesRoutes");
 const userRoutes = require("./routes/userRoutes");
 const occasionRoutes = require("./routes/occasionRoutes");
 const productsRoutes = require("./routes/productsRoutes");
-const orderRoutes = require("./routes/orderRoutes")
-
+const orderRoutes = require("./routes/orderRoutes");
+const commentRoutes = require("./routes/commentRoutes");
+const commentReportRoutes = require("./routes/commentReportRoutes");
+const contactMessageRoutes = require("./routes/contactMessageRoutes");
+const adsRoutes = require("./routes/adsRoutes");
 
 const app = express();
 
@@ -35,18 +38,21 @@ app.use("/api", userRoutes);
 app.use("/api/occasion", occasionRoutes);
 app.use("/api", productsRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api", commentRoutes);
+app.use("/api/comment-reports", commentReportRoutes);
+app.use("/api", contactMessageRoutes);
+app.use("/api/ads", adsRoutes);
 
 app.use("/uploads", express.static("uploads"));
-
 
 const PORT = process.env.PORT || 5000;
 
 sequelize
   .authenticate()
   .then(() => {
-    console.log("✅ Database connected!");
+    console.log(" Database connected!");
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(` Server running on http://localhost:${PORT}`);
     });
   })
   .catch((error) => {

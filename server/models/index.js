@@ -31,15 +31,12 @@ fs.readdirSync(__dirname)
     );
   })
   .forEach((file) => {
-    console.log(`✅ Loading Model File: ${file}`); // ✅ Debug Log
     const model = require(path.join(__dirname, file))(
       sequelize,
       Sequelize.DataTypes
     );
     db[model.name] = model;
   });
-
-console.log(`✅ Final Loaded Models:`, Object.keys(db)); // ✅ Debug Log
 
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {

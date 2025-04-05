@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../../Slices/cartSlice";
 import { addToFavorite, removeFromFavorite } from "../../Slices/favoriteSlice";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const NewArrivals = () => {
   const [products, setProducts] = useState([]);
@@ -50,34 +52,64 @@ const NewArrivals = () => {
     return Math.round(((oldPrice - price) / oldPrice) * 100);
   };
 
+  // Add to cart with toast notification
+  const handleAddToCart = (item) => {
+    dispatch(addToCart(item));
+    toast.success("Product added to cart");
+  };
+
+  // Toggle favorite with toast notification
+  const handleFavoriteToggle = (item, isFavorite) => {
+    if (isFavorite) {
+      dispatch(removeFromFavorite(item.id));
+      toast.info("Product delete from favorites");
+    } else {
+      dispatch(addToFavorite(item));
+      toast.success("Product added to favorites");
+    }
+  };
+
   return (
-    <div className="bg-gray-50 min-h-screen pb-12">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-indigo-700 to-indigo-500 text-white">
-        <div className="container mx-auto px-4 py-16 md:py-24">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">New Arrivals</h1>
-          <p className="text-indigo-100 text-lg md:w-2/3 leading-relaxed">
-            Explore the latest fashion trends and find your perfect style.
+    <section className="py-24 bg-[#fff] relative overflow-hidden">
+      {/* Decorative background circles */}
+      <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-[#F0BB78]/5 blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-[#F0BB78]/5 blur-3xl translate-x-1/2 translate-y-1/2 pointer-events-none"></div>
+
+      {/* Toast Container */}
+      <ToastContainer position="top-right" autoClose={3000} />
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl relative">
+        {/* Header Section */}
+        <div className="text-center mb-16">
+          <span className="inline-block px-3 py-1 bg-[#F0BB78] text-black rounded-full text-sm font-semibold tracking-wide uppercase shadow-sm">
+            New Collection
+          </span>
+          <h2 className="mt-4 text-4xl sm:text-5xl font-bold text-black leading-tight">
+            New Arrivals
+          </h2>
+          <div className="mt-4 mx-auto h-1 w-24 bg-[#F0BB78] rounded-full shadow-lg"></div>
+          <p className="mt-8 text-xl black max-w-2xl mx-auto leading-relaxed">
+            Discover the latest fashion trends and find your perfect style.
           </p>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
+        {/* Loading State */}
         {loading && (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#F0BB78]"></div>
           </div>
         )}
 
+        {/* Error State */}
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
             <p className="text-center text-red-500">{error}</p>
           </div>
         )}
 
+        {/* Products Grid */}
         {!loading && !error && currentProducts.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
             {currentProducts.map((product) => {
               const isFavorite = favoriteItems.some(
                 (fav) => fav.id === product.id
@@ -88,7 +120,7 @@ const NewArrivals = () => {
                   ? product.image
                   : product.image
                   ? `http://localhost:5000/${product.image.replace(/\\/g, "/")}`
-                  : "https://via.placeholder.com/300"; // fallback image URL
+                  : "https://via.placeholder.com/300";
 
               const hasDiscount =
                 product.oldPrice && product.oldPrice > product.price;
@@ -96,36 +128,35 @@ const NewArrivals = () => {
               return (
                 <div
                   key={product.id}
-                  className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition duration-300 group border border-gray-100"
+                  className="bg-[#181818] text-white rounded-lg overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.2)] hover:shadow-[0_8px_30px_rgba(240,187,120,0.2)] transition duration-500 group border border-[#F0BB78]/20 cursor-pointer transform hover:-translate-y-1"
+                  onClick={() =>
+                    navigate(`/product/${product.id}`, {
+                      state: { item: product },
+                    })
+                  }
                 >
                   {/* Product Image */}
-                  <div
-                    className="relative overflow-hidden"
-                    onClick={() =>
-                      navigate(`/product/${product.id}`, {
-                        state: { item: product },
-                      })
-                    }
-                  >
+                  <div className="relative overflow-hidden">
                     <div className="aspect-[3/4] overflow-hidden">
                       <img
                         src={imageUrl}
                         alt={product.name}
-                        className="w-full h-full object-cover object-top group-hover:scale-105 transition duration-500"
+                        className="w-full h-full object-cover object-top group-hover:scale-105 transition duration-700"
                       />
                     </div>
 
+                    {/* Discount Badge */}
                     {hasDiscount && (
-                      <div className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      <div className="absolute top-3 left-3 bg-[#F0BB78] text-[#000000] text-xs font-bold px-3 py-1 rounded-full shadow-md">
                         {getDiscountPercentage(product.oldPrice, product.price)}
                         % OFF
                       </div>
                     )}
 
-                    {/* Quick Actions Overlay */}
-                    <div className="absolute inset-0 bg-black bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                       <button
-                        className="bg-white text-gray-800 p-2 rounded-full shadow-lg mx-2 hover:bg-gray-100 transition"
+                        className="bg-[#181818] text-white p-3 rounded-full shadow-lg mx-2 hover:bg-[#F0BB78]/20 transition transform hover:scale-105 duration-300"
                         title="Quick view"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -152,9 +183,9 @@ const NewArrivals = () => {
                   </div>
 
                   {/* Product Info */}
-                  <div className="p-4">
-                    <h3
-                      className="text-gray-800 font-medium text-sm md:text-base mb-1 truncate cursor-pointer hover:text-indigo-600 transition"
+                  <div className="p-5">
+                    <h5
+                      className="text-sm sm:text-base font-bold truncate hover:text-[#F0BB78] transition cursor-pointer"
                       onClick={() =>
                         navigate(`/product/${product.id}`, {
                           state: { item: product },
@@ -162,59 +193,56 @@ const NewArrivals = () => {
                       }
                     >
                       {product.name}
-                    </h3>
-                    <p className="text-gray-500 text-xs md:text-sm mb-3 line-clamp-1">
+                    </h5>
+                    <p className="mt-2 text-white/80 text-xs sm:text-sm truncate">
                       {product.description}
                     </p>
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-gray-900 font-bold">
-                          ${product.price}
-                        </span>
-                        {hasDiscount && (
-                          <span className="text-gray-400 text-sm line-through">
-                            ${product.oldPrice}
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex items-center mt-3">
+                      <h6 className="text-base sm:text-lg font-bold text-[#F0BB78]">
+                        ${product.price}
+                      </h6>
+                      {hasDiscount && (
+                        <h6 className="ml-2 text-sm text-gray-400 line-through">
+                          ${product.oldPrice}
+                        </h6>
+                      )}
                     </div>
+
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 mt-4">
                       <button
-                        type="button"
-                        className={`p-2 rounded-full transition-colors duration-200 flex-shrink-0 ${
+                        className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors duration-300 shadow-sm ${
                           isFavorite
-                            ? "bg-pink-100 text-pink-600"
-                            : "bg-gray-100 text-gray-500 hover:bg-pink-50 hover:text-pink-500"
+                            ? "bg-[#F0BB78]/20 text-[#F0BB78]"
+                            : "bg-[#262626] text-gray-300 hover:bg-[#F0BB78]/20 hover:text-[#F0BB78]"
                         }`}
                         title={
                           isFavorite
                             ? "Remove from wishlist"
                             : "Add to wishlist"
                         }
-                        onClick={() =>
-                          isFavorite
-                            ? dispatch(removeFromFavorite(product.id))
-                            : dispatch(addToFavorite(product))
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleFavoriteToggle(product, isFavorite);
+                        }}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
+                          width="18px"
+                          height="18px"
                           fill="currentColor"
-                          viewBox="0 0 16 16"
+                          viewBox="0 0 64 64"
                         >
-                          <path
-                            fillRule="evenodd"
-                            d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"
-                          />
+                          <path d="M45.5 4A18.53 18.53 0 0 0 32 9.86 18.5 18.5 0 0 0 0 22.5C0 40.92 29.71 59 31 59.71a2 2 0 0 0 2.06 0C34.29 59 64 40.92 64 22.5A18.52 18.52 0 0 0 45.5 4Z" />
                         </svg>
                       </button>
                       <button
                         type="button"
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium py-2 px-4 rounded transition-colors duration-200 flex items-center justify-center gap-2"
-                        onClick={() => dispatch(addToCart(product))}
+                        className="flex-1 bg-[#F0BB78] hover:bg-[#F0BB78]/90 text-[#000000] text-sm font-medium py-3 px-4 rounded transition-colors duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCart(product);
+                        }}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -230,7 +258,7 @@ const NewArrivals = () => {
                           />
                           <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z" />
                         </svg>
-                        Add to Cart
+                        Add to cart
                       </button>
                     </div>
                   </div>
@@ -242,10 +270,10 @@ const NewArrivals = () => {
 
         {/* Empty State */}
         {!loading && !error && currentProducts.length === 0 && (
-          <div className="text-center py-16">
+          <div className="text-center py-16 text-white">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-16 w-16 mx-auto text-gray-400 mb-4"
+              className="h-16 w-16 mx-auto text-[#F0BB78] mb-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -257,10 +285,10 @@ const NewArrivals = () => {
                 d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
+            <h3 className="text-lg font-medium text-white mb-1">
               No products found
             </h3>
-            <p className="text-gray-500">Try adjusting your filter criteria</p>
+            <p className="text-white/70">Try adjusting your filter criteria</p>
           </div>
         )}
 
@@ -271,7 +299,7 @@ const NewArrivals = () => {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1 rounded border border-[#F0BB78]/30 text-[#F0BB78] hover:bg-[#F0BB78]/10 disabled:opacity-50"
               >
                 Previous
               </button>
@@ -281,8 +309,8 @@ const NewArrivals = () => {
                   onClick={() => handlePageChange(i + 1)}
                   className={`px-3 py-1 rounded border ${
                     currentPage === i + 1
-                      ? "bg-indigo-600 text-white"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                      ? "bg-[#F0BB78] text-black"
+                      : "border-[#F0BB78]/30 text-[#F0BB78] hover:bg-[#F0BB78]/10"
                   }`}
                 >
                   {i + 1}
@@ -291,7 +319,7 @@ const NewArrivals = () => {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="px-3 py-1 rounded border border-[#F0BB78]/30 text-[#F0BB78] hover:bg-[#F0BB78]/10 disabled:opacity-50"
               >
                 Next
               </button>
@@ -299,7 +327,7 @@ const NewArrivals = () => {
           </div>
         )}
       </div>
-    </div>
+    </section>
   );
 };
 

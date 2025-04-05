@@ -4,7 +4,10 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class User extends Model {
     static associate(models) {
-      // define association here if needed
+      this.hasMany(models.Order, {
+        foreignKey: "userId",
+        as: "orders",
+      });
     }
   }
   User.init(
@@ -24,14 +27,13 @@ module.exports = (sequelize, DataTypes) => {
       },
       password: {
         type: DataTypes.STRING,
-        allowNull: true, // set to true if you want to allow Google sign-up without a password
+        allowNull: true,
       },
       role: {
         type: DataTypes.STRING,
         defaultValue: "customer",
       },
 
-      // New fields for Google OAuth
       username: {
         type: DataTypes.STRING,
         allowNull: true,

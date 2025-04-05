@@ -69,7 +69,7 @@ const Occasion = () => {
           {occasions.map((occasion, index) => (
             <div
               key={index}
-              className="relative h-96 rounded-xl overflow-hidden group transition-all duration-500 
+              className="relative h-110 rounded-xl overflow-hidden group transition-all duration-500 
               bg-[#181818] 
               shadow-[0_10px_30px_rgba(0,0,0,0.3),0_0_0_1px_rgba(240,187,120,0.05)] 
               hover:shadow-[0_20px_40px_rgba(0,0,0,0.4),0_0_0_1px_rgba(240,187,120,0.1)] 
@@ -188,25 +188,7 @@ const Occasion = () => {
         </div>
 
         {/* Testimonial - updated styling */}
-        <div className="mt-16 text-center bg-[#181818] p-8 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-[#F0BB78]/10">
-          <svg
-            className="w-12 h-12 text-[#F0BB78] mx-auto mb-4"
-            fill="currentColor"
-            viewBox="0 0 32 32"
-          >
-            <path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z" />
-          </svg>
-          <p className="italic text-lg text-white/80">
-            "I absolutely love how I can shop by occasion. It's made finding the
-            perfect outfit so much easier!"
-          </p>
-          <div className="mt-2 font-medium text-white flex items-center justify-center">
-            <span className="h-8 w-8 rounded-full bg-[#F0BB78] text-[#000000] flex items-center justify-center text-sm font-semibold mr-2 shadow-md">
-              SD
-            </span>
-            — Sarah D., Loyal Customer
-          </div>
-        </div>
+        
       </div>
     </section>
   );

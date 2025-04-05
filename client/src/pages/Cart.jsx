@@ -4,8 +4,11 @@ import {
   removeFromCart,
   updateQuantity,
   updateOptions,
+  clearCart,
 } from "../Slices/cartSlice";
 import { Link, useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Cart = () => {
   const dispatch = useDispatch();
@@ -40,19 +43,68 @@ const Cart = () => {
   const handleProceedToCheckout = () => {
     if (validCart) {
       navigate("/checkout");
+    } else {
+      toast.error("Please select size and color for all items", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  // Handler for removing item from cart
+  const handleRemoveFromCart = (id, name) => {
+    dispatch(removeFromCart(id));
+    toast.success(`${name} removed from cart`, {
+      position: "top-right",
+      autoClose: 3000,
+    });
+  };
+
+  // Handler for updating quantity
+  const handleUpdateQuantity = (id, name, quantity, increment) => {
+    dispatch(updateQuantity({ id, quantity }));
+    toast.info(
+      `${name} quantity ${
+        increment ? "increased" : "decreased"
+      } to ${quantity}`,
+      {
+        position: "top-right",
+        autoClose: 2000,
+      }
+    );
+  };
+
+  // Handler for updating options
+  const handleUpdateOptions = (id, selectedSize, selectedColor) => {
+    dispatch(updateOptions({ id, selectedSize, selectedColor }));
+    toast.info("Product options updated", {
+      position: "top-right",
+      autoClose: 2000,
+    });
+  };
+
+  // Handler for clearing cart
+  const handleClearCart = () => {
+    if (cartItems.length > 0) {
+      dispatch(clearCart());
+      toast.info("Cart has been cleared", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     }
   };
 
   return (
-    <div className="font-sans bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen py-12">
+    <div className="font-sans bg-[#fff] text-black min-h-screen py-12">
+      <ToastContainer />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+        <h1 className="text-4xl font-bold text-black mb-8">Shopping Cart</h1>
 
         {cartItems.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+          <div className="bg-[#181818] rounded-xl shadow-lg p-12 text-center">
             <div className="flex justify-center mb-6">
               <svg
-                className="w-24 h-24 text-gray-300"
+                className="w-24 h-24 text-[#F0BB78]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -66,10 +118,10 @@ const Cart = () => {
                 ></path>
               </svg>
             </div>
-            <p className="text-xl text-gray-500 mb-6">Your cart is empty</p>
+            <p className="text-xl text-white/70 mb-6">Your cart is empty</p>
             <Link
               to="/products"
-              className="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-300"
+              className="inline-block px-6 py-3 bg-[#F0BB78] text-black font-medium rounded-lg transition-all duration-300 hover:shadow-[0_5px_15px_rgba(240,187,120,0.4)] transform hover:-translate-y-1"
             >
               Continue Shopping
             </Link>
@@ -78,14 +130,14 @@ const Cart = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <h2 className="text-lg font-semibold text-gray-800">
+              <div className="bg-[#181818] rounded-xl shadow-lg overflow-hidden">
+                <div className="px-6 py-4 bg-[#252525] border-b border-[#F0BB78]/20">
+                  <h2 className="text-lg font-semibold text-white">
                     Items ({cartItems.length})
                   </h2>
                 </div>
 
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-[#252525]">
                   {cartItems.map((item) => {
                     const imageUrl = item.image.startsWith("http")
                       ? item.image
@@ -97,9 +149,9 @@ const Cart = () => {
                     return (
                       <div
                         key={item.id}
-                        className="flex flex-col sm:flex-row items-start gap-6 p-6 hover:bg-gray-50 transition-colors duration-200"
+                        className="flex flex-col sm:flex-row items-start gap-6 p-6 hover:bg-[#252525] transition-colors duration-200"
                       >
-                        <div className="w-32 h-32 flex-shrink-0 bg-gray-100 rounded-lg p-2">
+                        <div className="w-32 h-32 flex-shrink-0 bg-[#252525] rounded-lg p-2">
                           <img
                             src={imageUrl}
                             className="w-full h-full object-contain"
@@ -108,29 +160,27 @@ const Cart = () => {
                         </div>
 
                         <div className="flex-1 w-full">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                          <h3 className="text-lg font-semibold text-white mb-2">
                             {item.name}
                           </h3>
-                          <p className="text-sm text-gray-600 line-clamp-2">
+                          <p className="text-sm text-white/60 line-clamp-2">
                             {item.description}
                           </p>
 
                           {/* Dropdown for selected size */}
-                          <div className="mt-2 text-sm text-gray-700">
+                          <div className="mt-2 text-sm text-white/70">
                             <label className="mr-2 font-semibold">Size:</label>
                             <select
                               value={item.selectedSize || "select size"}
-                              onChange={(e) =>
-                                dispatch(
-                                  updateOptions({
-                                    id: item.id,
-                                    selectedSize: e.target.value,
-                                    selectedColor:
-                                      item.selectedColor || "select color",
-                                  })
-                                )
-                              }
-                              className="border border-gray-300 rounded px-2 py-1"
+                              onChange={(e) => {
+                                const newSize = e.target.value;
+                                handleUpdateOptions(
+                                  item.id,
+                                  newSize,
+                                  item.selectedColor || "select color"
+                                );
+                              }}
+                              className="border border-[#F0BB78]/20 bg-[#252525] text-white rounded px-2 py-1"
                             >
                               {availableSizes.map((size) => (
                                 <option key={size} value={size}>
@@ -141,21 +191,19 @@ const Cart = () => {
                           </div>
 
                           {/* Dropdown for selected color */}
-                          <div className="mt-2 text-sm text-gray-700">
+                          <div className="mt-2 text-sm text-white/70">
                             <label className="mr-2 font-semibold">Color:</label>
                             <select
                               value={item.selectedColor || "select color"}
-                              onChange={(e) =>
-                                dispatch(
-                                  updateOptions({
-                                    id: item.id,
-                                    selectedSize:
-                                      item.selectedSize || "select size",
-                                    selectedColor: e.target.value,
-                                  })
-                                )
-                              }
-                              className="border border-gray-300 rounded px-2 py-1"
+                              onChange={(e) => {
+                                const newColor = e.target.value;
+                                handleUpdateOptions(
+                                  item.id,
+                                  item.selectedSize || "select size",
+                                  newColor
+                                );
+                              }}
+                              className="border border-[#F0BB78]/20 bg-[#252525] text-white rounded px-2 py-1"
                             >
                               {availableColors.map((color) => (
                                 <option key={color} value={color}>
@@ -168,8 +216,10 @@ const Cart = () => {
                           <div className="mt-4 flex flex-wrap gap-3">
                             <button
                               type="button"
-                              className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-red-600 transition-colors duration-200"
-                              onClick={() => dispatch(removeFromCart(item.id))}
+                              className="flex items-center gap-1.5 text-sm font-medium text-white/60 hover:text-[#F0BB78] transition-colors duration-200"
+                              onClick={() =>
+                                handleRemoveFromCart(item.id, item.name)
+                              }
                             >
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
@@ -181,7 +231,15 @@ const Cart = () => {
                               </svg>
                               Remove
                             </button>
-                            <button className="flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors duration-200">
+                            <button
+                              className="flex items-center gap-1.5 text-sm font-medium text-white/60 hover:text-[#F0BB78] transition-colors duration-200"
+                              onClick={() => {
+                                toast.success(`${item.name} saved for later`, {
+                                  position: "top-right",
+                                  autoClose: 3000,
+                                });
+                              }}
+                            >
                               <svg
                                 className="w-4 h-4"
                                 fill="none"
@@ -202,23 +260,24 @@ const Cart = () => {
                         </div>
 
                         <div className="ml-auto text-right pt-2 sm:pt-0">
-                          <h4 className="text-lg font-bold text-gray-900 mb-3">
+                          <h4 className="text-lg font-bold text-white mb-3">
                             ${(item.price * item.quantity).toFixed(2)}
                           </h4>
 
-                          <div className="inline-flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                          <div className="inline-flex items-center border border-[#F0BB78]/20 rounded-lg overflow-hidden">
                             <button
                               type="button"
-                              className="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
-                              onClick={() =>
-                                item.quantity > 1 &&
-                                dispatch(
-                                  updateQuantity({
-                                    id: item.id,
-                                    quantity: item.quantity - 1,
-                                  })
-                                )
-                              }
+                              className="px-3 py-2 text-white/60 hover:bg-[#252525] transition-colors"
+                              onClick={() => {
+                                if (item.quantity > 1) {
+                                  handleUpdateQuantity(
+                                    item.id,
+                                    item.name,
+                                    item.quantity - 1,
+                                    false
+                                  );
+                                }
+                              }}
                               disabled={item.quantity <= 1}
                             >
                               <svg
@@ -236,18 +295,18 @@ const Cart = () => {
                                 ></path>
                               </svg>
                             </button>
-                            <span className="text-sm font-semibold px-4 py-2 bg-gray-50">
+                            <span className="text-sm font-semibold px-4 py-2 bg-[#252525] text-white">
                               {item.quantity}
                             </span>
                             <button
                               type="button"
-                              className="px-3 py-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                              className="px-3 py-2 text-white/60 hover:bg-[#252525] transition-colors"
                               onClick={() =>
-                                dispatch(
-                                  updateQuantity({
-                                    id: item.id,
-                                    quantity: item.quantity + 1,
-                                  })
+                                handleUpdateQuantity(
+                                  item.id,
+                                  item.name,
+                                  item.quantity + 1,
+                                  true
                                 )
                               }
                             >
@@ -277,7 +336,7 @@ const Cart = () => {
               <div className="mt-6 flex justify-between">
                 <Link
                   to="/products"
-                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                  className="inline-flex items-center gap-2 text-[#F0BB78] hover:text-white font-medium text-sm"
                 >
                   <svg
                     className="w-5 h-5"
@@ -296,7 +355,10 @@ const Cart = () => {
                   Continue Shopping
                 </Link>
 
-                <button className="text-sm text-gray-600 hover:text-gray-800 font-medium">
+                <button
+                  className="text-sm text-white/60 hover:text-white font-medium"
+                  onClick={handleClearCart}
+                >
                   Clear Cart
                 </button>
               </div>
@@ -304,12 +366,12 @@ const Cart = () => {
 
             {/* Order Summary */}
             <div>
-              <div className="bg-white rounded-xl shadow-lg p-6 lg:sticky lg:top-8">
-                <h3 className="text-xl font-bold text-gray-800 border-b border-gray-200 pb-4">
+              <div className="bg-[#181818] rounded-xl shadow-lg p-6 lg:sticky lg:top-8">
+                <h3 className="text-xl font-bold text-white border-b border-[#F0BB78]/20 pb-4">
                   Order Summary
                 </h3>
 
-                <ul className="text-gray-800 divide-y mt-4">
+                <ul className="text-white divide-y mt-4 divide-[#252525]">
                   <li className="flex justify-between text-sm py-3">
                     Subtotal (
                     {cartItems.reduce((sum, item) => sum + item.quantity, 0)}{" "}
@@ -318,42 +380,43 @@ const Cart = () => {
                   </li>
                   <li className="flex justify-between text-sm py-3">
                     Shipping
-                    <span className="font-semibold text-green-600">Free</span>
+                    <span className="font-semibold text-[#F0BB78]">Free</span>
                   </li>
                   <li className="flex justify-between text-sm py-3">
                     Estimated Tax
-                    <span className="font-semibold">
+                    <span className="font-semibold text-white/60">
                       Calculated at checkout
                     </span>
                   </li>
                 </ul>
 
-                <div className="border-t border-gray-200 mt-4 pt-4">
-                  <div className="flex justify-between font-bold text-lg">
+                <div className="border-t border-[#F0BB78]/20 mt-4 pt-4">
+                  <div className="flex justify-between font-bold text-lg text-white">
                     <span>Total</span>
                     <span>${total.toFixed(2)}</span>
                   </div>
                 </div>
 
-                {validCart ? (
-                  <button
-                    onClick={handleProceedToCheckout}
-                    className="block mt-6 w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-                  >
-                    Proceed to Checkout
-                  </button>
-                ) : (
-                  <button
-                    disabled
-                    className="block mt-6 w-full text-center bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg cursor-not-allowed"
-                    title="Please select size and color for each item to proceed"
-                  >
-                    Select size and color to proceed
-                  </button>
-                )}
+                <button
+                  onClick={handleProceedToCheckout}
+                  className={`block mt-6 w-full text-center font-semibold py-3 px-4 rounded-lg transition-all duration-300 ${
+                    validCart
+                      ? "bg-[#F0BB78] text-black hover:shadow-[0_5px_15px_rgba(240,187,120,0.4)] transform hover:-translate-y-1"
+                      : "bg-[#252525] text-white/60 cursor-not-allowed"
+                  }`}
+                  title={
+                    validCart
+                      ? "Proceed to checkout"
+                      : "Please select size and color for each item to proceed"
+                  }
+                >
+                  {validCart
+                    ? "Proceed to Checkout"
+                    : "Select size and color to proceed"}
+                </button>
 
                 <div className="mt-6">
-                  <div className="flex items-center justify-center space-x-4 text-gray-500">
+                  <div className="flex items-center justify-center space-x-4 text-white/60">
                     <svg
                       className="w-8 h-8"
                       viewBox="0 0 24 24"
@@ -379,16 +442,16 @@ const Cart = () => {
                       <path d="M16 2H8C6.9 2 6 2.9 6 4V20C6 21.1 6.9 22 8 22H16C17.1 22 18 21.1 18 20V4C18 2.9 17.1 2 16 2ZM16 17H8V7H16V17Z" />
                     </svg>
                   </div>
-                  <p className="text-xs text-center text-gray-500 mt-2">
+                  <p className="text-xs text-center text-white/60 mt-2">
                     Secure checkout powered by trusted payment methods
                   </p>
                 </div>
               </div>
 
-              <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
+              <div className="mt-6 bg-[#252525] border border-[#F0BB78]/10 rounded-lg p-4">
                 <div className="flex items-start">
                   <svg
-                    className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0"
+                    className="w-5 h-5 text-[#F0BB78] mt-0.5 mr-3 flex-shrink-0"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                     xmlns="http://www.w3.org/2000/svg"
@@ -400,15 +463,15 @@ const Cart = () => {
                     ></path>
                   </svg>
                   <div>
-                    <h4 className="font-medium text-blue-600">
+                    <h4 className="font-medium text-[#F0BB78]">
                       Need assistance?
                     </h4>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-white/60 mt-1">
                       If you have any questions about your cart or the checkout
                       process, feel free to contact our customer support at{" "}
                       <a
                         href="mailto:support@example.com"
-                        className="text-blue-500 underline ml-1"
+                        className="text-[#F0BB78] underline ml-1"
                       >
                         support@example.com
                       </a>

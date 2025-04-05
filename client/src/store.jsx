@@ -7,11 +7,13 @@ import kidsReducer from "./Slices/kidsSlice";
 import womenReducer from "./Slices/womenSlice";
 // import saleReducer from "./Slices/saleSlice";
 import allProductsReducer from "./Slices/allProductsSlice";
+import searchReducer from "./Slices/searchSlice";
 
 const store = configureStore({
   reducer: {
     allProducts: allProductsReducer,
     // sale: saleReducer,
+    search: searchReducer,
     women: womenReducer,
     kids: kidsReducer,
     men: menReducer,
